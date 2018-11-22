@@ -25,10 +25,6 @@ if __name__ == '__main__':
     imgFiles = getImgFileList("./images")
     # print(imgFiles)
 
-    #frames = []  
-    #for image_name in imgFiles:  
-    #    frames.append(imageio.imread(image_name))
-
     # 提取模板
     # 定位模板位置百分比参数
     sXp = 0.29  # 左上角X坐标位置百分比
@@ -53,8 +49,12 @@ if __name__ == '__main__':
     methods = [cv.TM_SQDIFF_NORMED, cv.TM_CCORR_NORMED, cv.TM_CCOEFF_NORMED]   #3种模板匹配方法
     th, tw = tpl.shape[:2]
 
-    for image_name in imgFiles:  
-        target = cv.imread(image_name)
+    cpMap = {}
+
+    # 匹配模板并获取模板匹配中心坐标
+    for imageName in imgFiles:  
+        target = cv.imread(imageName)
+        targetH, targetW = target.shape[:2]
 
         md = methods[2] # 选择匹配方法
 
@@ -66,12 +66,55 @@ if __name__ == '__main__':
         else:
             tl = max_loc
         br = (tl[0]+tw, tl[1]+th)   #br是矩形右下角的点的坐标
-        cv.rectangle(target, tl, br, (0, 0, 255), 2)
-        cv.namedWindow("match-" + image_name, cv.WINDOW_NORMAL)
-        cv.imshow("match-" + image_name, target)
 
-    cv.waitKey(0)
-    cv.destroyAllWindows()
+        # 记录图像宽高和匹配坐标中心点
+        cpX = int(tl[0]+tw/2)
+        cpY = int(tl[1]+th/2)
+        cpMap[imageName] = [targetW, targetH, cpX, cpY]
+        #cv.rectangle(target, tl, br, (0, 0, 255), 2)
+        #cv.namedWindow("match-" + imageName, cv.WINDOW_NORMAL)
+        #cv.imshow("match-" + imageName, target)
+
+    #print(cpMap)
+
+    minTopSize = float("inf")
+    minBottomSize = float("inf")
+    minLeftSize = float("inf")
+    minRightSize = float("inf")
+    
+    for key, item in cpMap.items():
+        #print(item)
+        if item[2] < minLeftSize:
+            minLeftSize = int(item[2])
+
+        if (item[0] - item[2]) < minRightSize:
+            minRightSize = int(item[0] - item[2])
+
+        if item[3] < minTopSize:
+            minTopSize = int(item[3])
+
+        if (item[1] - item[3]) < minBottomSize:
+            minBottomSize = int(item[1] - item[3])
+    
+
+    # 裁剪图片, 生成gif
+    frames = []  
+    for img, item in cpMap.items():
+        currentImg= imageio.imread(img)
+
+        print(minLeftSize, minRightSize, minTopSize, minBottomSize, item[0], item[1], item[2], item[3])
+
+        stripImg = currentImg[int(item[3] - minTopSize):int(item[3] + minBottomSize), int(item[2] - minLeftSize):int(item[2] + minRightSize)]
+        frames.append(stripImg)
+
+        tt = cv.imread(img)
+        cv.rectangle(tt, (int(item[2] - minLeftSize), int(item[3] - minTopSize)), (int(item[2] + minRightSize), int(item[3] + minBottomSize)), (0, 0, 255), 2)
+        cv.namedWindow("match-" + img, cv.WINDOW_NORMAL)
+        cv.imshow("match-" + img, tt)
+
     # Save them as frames into a gif   
-    # imageio.mimsave(outGifFileName, frames, 'GIF', duration = 0.8) 
+    imageio.mimsave(outGifFileName, frames, 'GIF', duration = 1) 
+
+    #cv.waitKey(0)
+    #cv.destroyAllWindows()
 
