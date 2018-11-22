@@ -23,6 +23,7 @@ def mergeFramesToGif(frames):
 if __name__ == '__main__':
     outGifFileName = "./out/out.gif"
     imgFiles = getImgFileList("./images")
+    imgFiles.sort()
     # print(imgFiles)
 
     # 提取模板
@@ -113,7 +114,7 @@ if __name__ == '__main__':
         cv.imshow("match-" + img, tt)
 
     # Save them as frames into a gif   
-    imageio.mimsave(outGifFileName, frames, 'GIF', duration = 1) 
+    imageio.mimsave(outGifFileName, frames, 'GIF', duration = 0.4)
 
     #cv.waitKey(0)
     #cv.destroyAllWindows()
